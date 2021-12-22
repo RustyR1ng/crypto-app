@@ -33,6 +33,9 @@ export default {
 		};
 	},
 	computed: {
+		alg: function () {
+			return this.checkAlgSelected();
+		},
 		key: function () {
 			return this.checkAlg('key');
 		},
@@ -42,31 +45,21 @@ export default {
 		alph: function () {
 			return this.checkAlg('alph');
 		},
-	},
-	watch: {
-		key: function (val) {
-			if (!val) {
-				this.form.data.key = '';
-			}
-		},
-		params: function (val) {
-			if (!val) {
-				this.form.data.params = '';
-			}
-		},
-		alph: function (val) {
-			if (!val) {
-				this.form.data.alph = '';
-			} else {
-				this.form.data.alph = 'aбв'; //TODO() default alph
-			}
+		mode: function () {
+			return this.form.endpoint == api.ENCRYPT
+				? 'encrypt_params'
+				: 'decrypt_params';
 		},
 	},
+	watch: {},
 	created() {
 		this.getAlgs();
 		this.getDefaultAlph();
 	},
 	methods: {
+		checkAlgSelected() {
+			return this.form.data.alg ? true : false;
+		},
 		checkAlg(param) {
 			const alg = this.form.data.alg;
 			if (alg) return this.algs[alg][param];
@@ -148,31 +141,7 @@ export default {
 			class="flex flex-col items-stretch w-full sm:w-8/12"
 			@submit.prevent="onSubmit"
 		>
-			<div class="flex items-end flex-wrap">
-				<div class="mx-2 my-2 flex-grow">
-					<Label for="key">Ключ</Label>
-					<Input
-						id="key"
-						v-model="form.data.key"
-						:disabled="key ? false : true"
-						name="key"
-						type="text"
-						required
-					></Input>
-				</div>
-
-				<div class="mx-2 my-2 flex-grow">
-					<Label for="params">Параметры</Label>
-					<Input
-						id="params"
-						v-model="form.data.params"
-						name="params"
-						type="text"
-						required
-						:disabled="params ? false : true"
-					></Input>
-				</div>
-
+			<div class="flex">
 				<div class="mx-2 my-2 flex-grow">
 					<Label for="alg">Алгоритм</Label>
 					<Select id="alg" v-model="form.data.alg" name="alg" required>
@@ -181,17 +150,30 @@ export default {
 						</option>
 					</Select>
 				</div>
+
+				<div class="mx-2 my-2 flex-grow">
+					<Label for="mode">Режим</Label>
+					<Select id="mode" v-model="form.endpoint" name="mode" required>
+						<option key="encrypt" :value="api.ENCRYPT" selected>
+							Шифровать
+						</option>
+						<option key="decrypt" :value="api.DECRYPT">Расшифровать</option>
+					</Select>
+				</div>
 			</div>
-			<div class="mx-2 my-2">
-				<Label for="alph">Алфавит</Label>
-				<Input
-					id="alph"
-					v-model="form.data.alph"
-					name="alph"
-					type="text"
-					:disabled="alph ? false : true"
-				></Input>
-			</div>
+			<template v-if="alg">
+				<template v-for="param in algs[form.data.alg][mode]" :key="param.id">
+					<div class="mx-2 my-2">
+						<Label :for="param">{{ param }}</Label>
+						<Input
+							:id="param"
+							v-model="form.data[param]"
+							:name="param"
+							type="text"
+						></Input>
+					</div>
+				</template>
+			</template>
 			<div class="my-2 mx-2">
 				<Label for="text">Текст</Label>
 				<Textarea
@@ -203,26 +185,8 @@ export default {
 			</div>
 
 			<div class="flex justify-center flex-wrap flex-grow">
-				<Button
-					v-if="api"
-					id="decrypt"
-					name="decrypt"
-					type="submit"
-					for="crypt"
-					class="mx-2 my-2"
-					@click="form.endpoint = api.DECRYPT"
-				>
-					Расшифровать
-				</Button>
-				<Button
-					v-if="api"
-					id="encrypt"
-					name="encrypt"
-					type="submit"
-					class="mx-2 my-2"
-					@click="form.endpoint = api.ENCRYPT"
-				>
-					Зашифровать
+				<Button id="send" name="send" type="submit" class="mx-2 my-2">
+					Отправить
 				</Button>
 			</div>
 		</form>
